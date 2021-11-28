@@ -1,0 +1,4 @@
+/home/119010114/.tut/pthread/build/CMakeFiles/rebuild_cache.dir
+/home/119010114/.tut/pthread/build/CMakeFiles/edit_cache.dir
+/home/119010114/.tut/pthread/build/CMakeFiles/testp.dir
+/home/119010114/.tut/pthread/build/CMakeFiles/core.dir

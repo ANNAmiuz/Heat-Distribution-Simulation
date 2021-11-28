@@ -1,0 +1,4 @@
+/home/119010114/.tut/mpi/build/CMakeFiles/rebuild_cache.dir
+/home/119010114/.tut/mpi/build/CMakeFiles/edit_cache.dir
+/home/119010114/.tut/mpi/build/CMakeFiles/testmpi.dir
+/home/119010114/.tut/mpi/build/CMakeFiles/core.dir

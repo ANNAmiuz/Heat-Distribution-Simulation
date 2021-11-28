@@ -1,0 +1,4 @@
+/home/119010114/csc4005-assignment-4/sequential/build/CMakeFiles/rebuild_cache.dir
+/home/119010114/csc4005-assignment-4/sequential/build/CMakeFiles/edit_cache.dir
+/home/119010114/csc4005-assignment-4/sequential/build/CMakeFiles/csc4005_imgui.dir
+/home/119010114/csc4005-assignment-4/sequential/build/CMakeFiles/core.dir
