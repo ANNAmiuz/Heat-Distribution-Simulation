@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <cuda_runtime_api.h> 
+#include <cuda.h> 
+#include <cooperative_groups.h>
 #define DEBUGx
 /* 2 algo to compute */
 
@@ -23,6 +26,7 @@
 
 // global buffer indicator
 __device__ int current_buffer = 0;
+int current_buffer_h = 0;
 
 
 // grid[i, j]: return by value
@@ -66,11 +70,11 @@ __device__ double update_single_d(size_t i, size_t j, double *data0, double *dat
 // kernel launched function by host
 // Jacobi = 0, Sor = 1 (algor)
 __global__ void calculation_kernel(int room_size, float block_size, int source_x, int source_y, float source_temp, float border_temp, float tolerance, float sor_constant, int algo, 
-    double *data0, double *data1) {
+    double *data0, double *data1, int k) {
 
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
-
+    cooperative_groups::grid_group g = cooperative_groups::this_grid(); 
     switch (algo) {
         case 0:
             for (size_t i = index; i < room_size; i+=stride) {
@@ -82,25 +86,29 @@ __global__ void calculation_kernel(int room_size, float block_size, int source_x
                     else if (current_buffer == 1) data0[i * room_size + j] = temp;
                 }
             }
-            current_buffer = !current_buffer;
+            //g.sync();
+            //if (index == 0)
+                //current_buffer = !current_buffer;
             break;
         case 1:
             // odd-even turn
-            for (int k = 0; k <= 1; k++) {
-                for (size_t i = index; i < room_size; i+=stride) {
-                    for (size_t j = 0; j < room_size; j++) {
-                        if (k == ((i + j) & 1)) {
-                            auto temp = update_single_d(i, j, data0, data1, room_size, source_x, source_y, source_temp, border_temp, sor_constant, algo);
-                            if (current_buffer == 1) data0[i * room_size + j] = temp;
-                            else if (current_buffer == 0) data1[i * room_size + j] = temp;
-                        } else {
-                            if (current_buffer == 1) data0[i * room_size + j] = get_grid_at_2index(i,j,data0,data1,room_size);
-                            else if (current_buffer == 0) data1[i * room_size + j] = get_grid_at_2index(i,j,data0,data1,room_size);
-                        }
+            //for (int k = 0; k <= 1; k++) {
+            for (size_t i = index; i < room_size; i+=stride) {
+                for (size_t j = 0; j < room_size; j++) {
+                    if (k == ((i + j) & 1)) {
+                        auto temp = update_single_d(i, j, data0, data1, room_size, source_x, source_y, source_temp, border_temp, sor_constant, algo);
+                        if (current_buffer == 1) data0[i * room_size + j] = temp;
+                        else if (current_buffer == 0) data1[i * room_size + j] = temp;
+                    } else {
+                        if (current_buffer == 1) data0[i * room_size + j] = get_grid_at_2index(i,j,data0,data1,room_size);
+                        else if (current_buffer == 0) data1[i * room_size + j] = get_grid_at_2index(i,j,data0,data1,room_size);
                     }
                 }
-                current_buffer = !current_buffer;
             }
+                //g.sync();
+                // if (index == 0)
+                //     current_buffer = !current_buffer;
+            //}
     }
 }
 
@@ -145,7 +153,25 @@ __host__ void host_call_calculate_entry(int room_size, float block_size, int sou
     double *data0_d, double *data1_d, int nElem) {
     int blocksize = nElem;
     int gridsize = room_size / nElem;
-    calculation_kernel<<<gridsize, blocksize>>>(room_size, block_size, source_x, source_y, source_temp, border_temp, tolerance, sor_constant, algo, data0_d, data1_d);
-    CHECK(cudaDeviceSynchronize());
+    int k = 0;
+    if (algo == 0) {
+        calculation_kernel<<<gridsize, blocksize>>>(room_size, block_size, source_x, source_y, source_temp, border_temp, tolerance, sor_constant, algo, data0_d, data1_d, k);
+        CHECK(cudaDeviceSynchronize());
+        current_buffer_h = !current_buffer_h;
+        CHECK(cudaMemcpyToSymbol(current_buffer, &current_buffer_h, sizeof(int)));
+    }
+    else if (algo == 1) {
+        calculation_kernel<<<gridsize, blocksize>>>(room_size, block_size, source_x, source_y, source_temp, border_temp, tolerance, sor_constant, algo, data0_d, data1_d, k);
+        CHECK(cudaDeviceSynchronize());
+        current_buffer_h = !current_buffer_h;
+        CHECK(cudaMemcpyToSymbol(current_buffer, &current_buffer_h, sizeof(int)));
+        k = !k;
+        
+        calculation_kernel<<<gridsize, blocksize>>>(room_size, block_size, source_x, source_y, source_temp, border_temp, tolerance, sor_constant, algo, data0_d, data1_d, k);
+        CHECK(cudaDeviceSynchronize());
+        current_buffer_h = !current_buffer_h;
+        CHECK(cudaMemcpyToSymbol(current_buffer, &current_buffer_h, sizeof(int)));
+        k = !k;
+    }
 }
 

@@ -223,7 +223,7 @@ int main(int argc, char **argv)
                     double ans = grid1[{i, j}];
                     double myres = grid[{i, j}];
                     if (ans != myres)
-                        printf("[%d %d] ans: %d myres: %d\n", i, j, ans, myres);
+                        printf("[%d %d] ans: %f myres: %f\n", i, j, ans, myres);
                 }
             }
 #endif
