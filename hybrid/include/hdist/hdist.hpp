@@ -3,6 +3,7 @@
 #include <vector>
 #include <cmath>
 #include <mpi.h>
+#include <omp.h>
 
 #define MIN_PER_PROC 2
 #define debugx

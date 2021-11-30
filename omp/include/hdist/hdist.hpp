@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <cmath>
+#include <omp.h>
 
 namespace hdist {
     /* 2 algo to compute */
